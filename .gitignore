@@ -1,0 +1,108 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv-*/
+*.venv
+
+# PyTorch & ML
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.jit
+wandb/
+logs/
+outputs/
+checkpoints/
+runs/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# IDEs
+# .vscode/  # Track vscode config
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# But ignore vscode workspace-specific files
+.vscode/*.log
+.vscode/settings.local.json
+
+# Project specific
+cache/
+tmp/
+temp/
+.cache/
+
+# Ignore third_party and .reference contents (they are independent git repos)
+# We track their existence but not their contents
+third_party/*
+!third_party/.gitkeep
+.reference/*
+!.reference/.gitkeep
+
+# Data files (uncomment if needed)
+# *.hdf5
+# *.h5
+# *.pkl
+# *.npy
+# *.npz
+
+# Large model checkpoints (keep small test models)
+# Uncomment to track small models:
+# !*.pt
+# !*.pth
+
+# Environment variables
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Claude specific
+.claude/memory/
+.claude/projects/
+
+# Keep important config files (already tracked above)
+# !.vscode/settings.json
+# !.vscode/launch.json
+# !.vscode/extensions.json
