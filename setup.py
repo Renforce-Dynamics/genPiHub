@@ -20,7 +20,7 @@ setup(
     install_requires=[
         "numpy>=1.20.0",
         "torch>=2.0.0",
-        "genesislab"
+        # "genesislab"  # Install separately - not on PyPI
     ],
     extras_require={
         "dev": [

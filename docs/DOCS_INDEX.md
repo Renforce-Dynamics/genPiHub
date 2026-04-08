@@ -7,11 +7,15 @@ Welcome to genPiHub! This index helps you find the right documentation.
 | What do you want to do? | Read this |
 |-------------------------|-----------|
 | **Get started quickly** | [QUICKSTART.md](QUICKSTART.md) ⭐ |
-| **Install genPiHub** | [INSTALL.sh](INSTALL.sh) |
-| **Learn about genPiHub** | [README.md](README.md) |
-| **Run tests** | [scripts/README.md](scripts/README.md) |
+| **Understand the repository** | [REPOSITORY_GUIDE.md](REPOSITORY_GUIDE.md) 🗺️ |
+| **Learn the architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) 🏗️ |
+| **Read the code** | [CODE_GUIDE.md](CODE_GUIDE.md) 💻 |
+| **Check technical specs** | [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md) 🔧 |
+| **Install genPiHub** | [INSTALL.sh](../INSTALL.sh) |
+| **Learn about genPiHub** | [README.md](../README.md) |
+| **Run tests** | [scripts/README.md](../scripts/README.md) |
 | **Understand migration** | [MIGRATION.md](MIGRATION.md) |
-| **API reference** | [docs/QUICK_START.md](docs/QUICK_START.md) |
+| **API reference** | [QUICK_START.md](QUICK_START.md) |
 
 ## 📖 Document Guide
 
@@ -23,7 +27,13 @@ Welcome to genPiHub! This index helps you find the right documentation.
 - First test
 - Basic usage example
 
-**Then Read** → [README.md](README.md)
+**Understand Repository** → [REPOSITORY_GUIDE.md](REPOSITORY_GUIDE.md) 🆕
+- Repository structure
+- Navigation guide
+- Key concepts
+- Learning paths
+
+**Then Read** → [README.md](../README.md)
 - Comprehensive overview
 - Features and architecture
 - Detailed examples
@@ -31,13 +41,31 @@ Welcome to genPiHub! This index helps you find the right documentation.
 
 ### For Developers
 
-**Test Scripts** → [scripts/README.md](scripts/README.md)
+**Architecture Design** → [ARCHITECTURE.md](ARCHITECTURE.md) 🆕
+- System architecture
+- Design patterns
+- Module details
+- Extension guide
+
+**Code Guide** → [CODE_GUIDE.md](CODE_GUIDE.md) 🆕
+- Code walkthrough
+- Key implementations
+- Design patterns
+- Debugging tips
+
+**Technical Specs** → [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md) 🆕
+- Design decisions (ADRs)
+- Interface specs
+- Performance requirements
+- Testing standards
+
+**Test Scripts** → [../scripts/README.md](../scripts/README.md)
 - All 11 test scripts explained
 - How to run tests
 - Expected results
 - Debugging tips
 
-**API Documentation** → [docs/QUICK_START.md](docs/QUICK_START.md)
+**API Documentation** → [QUICK_START.md](QUICK_START.md)
 - Detailed API reference
 - Configuration options
 - Advanced usage
@@ -58,9 +86,17 @@ genPiHub/
 ├── README.md              # Comprehensive guide
 ├── INSTALL.sh             # Installation script
 ├── MIGRATION.md           # Migration from policy_hub
-├── DOCS_INDEX.md          # This file
 ├── docs/
-│   └── QUICK_START.md     # Original detailed docs
+│   ├── DOCS_INDEX.md          # This file
+│   ├── REPOSITORY_GUIDE.md    # 🆕 Repository navigation
+│   ├── ARCHITECTURE.md        # 🆕 System architecture
+│   ├── CODE_GUIDE.md          # 🆕 Code walkthrough
+│   ├── TECHNICAL_SPEC.md      # 🆕 Technical specifications
+│   ├── QUICK_START.md         # API documentation
+│   ├── PROJECT_OVERVIEW.md    # Project overview
+│   ├── INSTALL_GUIDE.md       # Installation details
+│   ├── COMPLETION_REPORT.md   # Completion status
+│   └── SUMMARY.md             # Project summary
 ├── scripts/
 │   └── README.md          # Test scripts guide
 └── examples/
