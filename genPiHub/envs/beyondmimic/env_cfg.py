@@ -1,0 +1,180 @@
+"""BeyondMimic environment configuration for Genesis.
+
+Self-contained configuration for BeyondMimic whole-body tracking.
+"""
+
+from __future__ import annotations
+
+from genesislab.components.terrains import TerrainCfg
+from genesislab.components.sensors.fake_sensors import FakeContactSensorCfg
+from genesislab.engine.scene import SceneCfg
+from genesislab.managers import SceneEntityCfg, EventTermCfg
+from genesislab.managers.observation_manager import ObservationGroupCfg, ObservationTermCfg
+from genesislab.utils.configclass import configclass
+
+import genesis_tasks.locomotion.hvelocity.mdp as base_mdp
+from genesis_tasks.locomotion.hvelocity.components import (
+    CommandsCfg,
+    CurriculumCfg,
+    TerminationsCfg,
+)
+from genesislab.envs.manager_based_rl_env import ManagerBasedRlEnvCfg
+from genesislab.managers import RewardTermCfg
+
+from . import observations as bm_obs
+from .robot_cfg import G1_BEYONDMIMIC_CFG
+from .actions import BeyondMimicActionsCfg
+
+
+@configclass
+class BeyondMimicSceneCfg(SceneCfg):
+    """BeyondMimic scene configuration."""
+
+    num_envs: int = 1
+    env_spacing: tuple = (2.5, 2.5)
+    dt: float = 0.005  # 200 Hz
+    substeps: int = 1
+    backend: str = "cuda"
+    viewer: bool = True
+    terrain: TerrainCfg = TerrainCfg(terrain_type="plane")
+    robots: dict = {"robot": G1_BEYONDMIMIC_CFG}
+    sensors: dict = {
+        "contact_forces": FakeContactSensorCfg(
+            entity_name="robot",
+            history_length=3,
+            track_air_time=True,
+        )
+    }
+
+
+@configclass
+class BeyondMimicObservationsCfg:
+    """BeyondMimic observation configuration.
+
+    Observations vary based on whether state estimator is used.
+    """
+
+    @configclass
+    class PolicyCfg(ObservationGroupCfg):
+        """Policy observation group."""
+
+        # Angular velocity (always included)
+        base_ang_vel: ObservationTermCfg = ObservationTermCfg(
+            func=bm_obs.base_ang_vel_b
+        )
+
+        # Linear velocity (only with state estimator)
+        base_lin_vel: ObservationTermCfg = ObservationTermCfg(
+            func=bm_obs.base_lin_vel_b
+        )
+
+        # Joint state
+        joint_pos_rel: ObservationTermCfg = ObservationTermCfg(
+            func=bm_obs.joint_pos_rel
+        )
+        joint_vel: ObservationTermCfg = ObservationTermCfg(
+            func=bm_obs.joint_vel
+        )
+
+        # Last action
+        last_action: ObservationTermCfg = ObservationTermCfg(
+            func=bm_obs.last_action
+        )
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+
+    policy: PolicyCfg = PolicyCfg()
+
+
+@configclass
+class BeyondMimicEventsCfg:
+    """BeyondMimic reset events."""
+
+    reset_base: EventTermCfg = EventTermCfg(
+        func=base_mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.1, 0.1), "y": (-0.1, 0.1), "yaw": (-0.2, 0.2)},
+            "velocity_range": {
+                "x": (-0.05, 0.05),
+                "y": (-0.05, 0.05),
+                "z": (-0.05, 0.05),
+                "roll": (-0.05, 0.05),
+                "pitch": (-0.05, 0.05),
+                "yaw": (-0.05, 0.05),
+            },
+            "asset_cfg": SceneEntityCfg("robot", body_names="pelvis"),
+        },
+    )
+
+    reset_robot_joints: EventTermCfg = EventTermCfg(
+        func=base_mdp.reset_joints_by_scale,
+        mode="reset",
+        params={
+            "position_range": (0.5, 1.5),
+            "velocity_range": (0.0, 0.0),
+            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+        },
+    )
+
+
+@configclass
+class BeyondMimicRewardsCfg:
+    """BeyondMimic rewards (placeholder)."""
+
+    alive: RewardTermCfg = RewardTermCfg(func=base_mdp.is_alive, weight=1.0)
+
+
+@configclass
+class BeyondMimicGenesisEnvCfg(ManagerBasedRlEnvCfg):
+    """BeyondMimic environment configuration for Genesis.
+
+    Self-contained configuration for BeyondMimic whole-body tracking.
+    """
+
+    scene: BeyondMimicSceneCfg = BeyondMimicSceneCfg()
+    observations: BeyondMimicObservationsCfg = BeyondMimicObservationsCfg()
+    actions: BeyondMimicActionsCfg = BeyondMimicActionsCfg()
+    commands: CommandsCfg = CommandsCfg()
+    rewards: BeyondMimicRewardsCfg = BeyondMimicRewardsCfg()
+    terminations: TerminationsCfg = TerminationsCfg()
+    events: BeyondMimicEventsCfg = BeyondMimicEventsCfg()
+    curriculum: CurriculumCfg = CurriculumCfg()
+
+    def __post_init__(self):
+        self.decimation = 4  # 50 Hz control
+        self.episode_length_s = 20.0
+        self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
+        self.commands.base_velocity.rel_standing_envs = 0.0
+        self.curriculum = None
+
+
+def build_beyondmimic_env_config(
+    num_envs: int = 1,
+    viewer: bool = False,
+    device: str = "cuda",
+    **kwargs
+) -> BeyondMimicGenesisEnvCfg:
+    """Build BeyondMimic environment configuration.
+
+    Args:
+        num_envs: Number of parallel environments
+        viewer: Whether to enable viewer
+        device: Device for simulation
+        **kwargs: Additional overrides
+
+    Returns:
+        BeyondMimicGenesisEnvCfg instance
+    """
+    cfg = BeyondMimicGenesisEnvCfg()
+    cfg.scene.num_envs = num_envs
+    cfg.scene.viewer = viewer
+    cfg.scene.backend = device
+
+    for key, value in kwargs.items():
+        if hasattr(cfg, key):
+            setattr(cfg, key, value)
+
+    return cfg

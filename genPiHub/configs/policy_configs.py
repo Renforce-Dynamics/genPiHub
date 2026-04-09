@@ -139,6 +139,32 @@ class CLOTPolicyConfig(PolicyConfig):
 
 
 @dataclass
+class BeyondMimicPolicyConfig(PolicyConfig):
+    """Configuration for BeyondMimic policy (ONNX-based whole-body tracking)."""
+
+    name: str = "BeyondMimicPolicy"
+
+    # ONNX model
+    model_format: str = "onnx"  # Force ONNX format
+    use_model_meta_config: bool = True  # Load config from ONNX metadata
+
+    # Motion data (embedded in ONNX model)
+    use_motion_from_model: bool = True  # Motion data in model
+    max_timestep: int = -1  # Max motion timesteps (-1 = auto from model)
+    start_timestep: int = 0  # Starting timestep
+
+    # State estimator mode
+    without_state_estimator: bool = True  # wose mode (no position/velocity estimate)
+
+    # Action processing
+    action_scales: list[float] = field(default_factory=list)  # Per-joint scales
+    action_beta: float = 1.0  # EMA smoothing
+
+    # Robot anchor override
+    override_robot_anchor_pos: bool = True  # Use motion anchor position
+
+
+@dataclass
 class ProtoMotionsPolicyConfig(PolicyConfig):
     """Configuration for ProtoMotions policy (placeholder)."""
 

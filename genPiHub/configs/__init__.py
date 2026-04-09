@@ -4,6 +4,7 @@ from .policy_configs import (
     PolicyConfig,
     AMOPolicyConfig,
     CLOTPolicyConfig,
+    BeyondMimicPolicyConfig,
     ProtoMotionsPolicyConfig,
 )
 from .env_configs import (

@@ -26,4 +26,5 @@ def __getattr__(name: str):
 # ===== Register policies here =====
 policy_registry.add("AMOPolicy", ".amo_policy")
 policy_registry.add("CLOTPolicy", ".clot_policy")
+policy_registry.add("BeyondMimicPolicy", ".beyondmimic_policy")
 # policy_registry.add("ProtoMotionsPolicy", ".protomotions_policy")  # TODO

@@ -24,7 +24,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from genPiHub import load_policy
 from genPiHub.configs import CLOTPolicyConfig
 from genPiHub.tools import DOFConfig
-from genPiHub.envs.clot.robot_cfg import G1_23DOF_NAMES, G1_CLOT_DEFAULT_POS
+
+# G1 joint names and default positions (copied to avoid importing env_cfg)
+G1_23DOF_NAMES = [
+    "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+    "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+    "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+    "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+    "waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint",
+]
+
+G1_CLOT_DEFAULT_POS = [
+    -0.1, 0.0, 0.0, 0.3, -0.2, 0.0,  # Left leg
+    -0.1, 0.0, 0.0, 0.3, -0.2, 0.0,  # Right leg
+    0.0, 0.0, 0.0,  # Torso
+    0.5, 0.0, 0.2, 0.3,  # Left arm
+    0.5, 0.0, -0.2, 0.3,  # Right arm
+]
 
 
 def parse_args():

@@ -68,6 +68,10 @@ class CLOTPolicy(Policy):
         # AMP observation buffer
         self.amp_obs_buffer = None
 
+        # Compute observation dimension
+        # Policy obs: gravity(3) + ang_vel(3) + lin_vel(3) + joint_pos(23) + joint_vel(23) + last_action(23) = 81
+        self.num_obs = 3 + 3 + 3 + self.num_actions + self.num_actions + self.num_actions
+
         logger.info(
             f"CLOT policy initialized: "
             f"num_obs={self.num_obs}, num_actions={self.num_actions}, "
@@ -121,8 +125,13 @@ class CLOTPolicy(Policy):
 
     def reset(self):
         """Reset CLOT policy state."""
-        super().reset()
+        self.last_action = np.zeros(self.num_actions)
         self.amp_obs_buffer = None
+
+        # Reset history buffer if used
+        if self.history_buf is not None:
+            default_history = np.zeros(self.history_obs_size)
+            self._init_history(default_history)
 
     def get_observation(
         self, env_data: Dict[str, Any], ctrl_data: Dict[str, Any]
