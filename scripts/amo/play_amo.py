@@ -63,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--print-every", type=int, default=100)
 
     # Policy
-    parser.add_argument("--model-dir", type=str, default="third_party/AMO", help="AMO model directory")
+    parser.add_argument("--model-dir", type=str, default="data/AMO", help="AMO model directory")
     parser.add_argument("--action-scale", type=float, default=0.25)
 
     # Commands

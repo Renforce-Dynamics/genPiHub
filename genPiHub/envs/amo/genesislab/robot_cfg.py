@@ -14,7 +14,7 @@ from genesislab.engine.assets.robot import InitialPoseCfg, RobotCfg
 
 # Use AMO's original g1.xml
 # Path from genPiHub/envs/amo/robot_cfg.py -> data/amo_assets
-AMO_ASSET_DIR = Path(__file__).resolve().parents[4] / "third_party" / "AMO"
+AMO_ASSET_DIR = Path(__file__).resolve().parents[4] / "data" / "AMO"
 
 # AMO PD parameters from play_amo.py
 # G1 23DOF configuration
