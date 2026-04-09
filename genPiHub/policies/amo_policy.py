@@ -41,14 +41,9 @@ class AMOPolicy(Policy):
 
         self.cfg_amo: AMOPolicyConfig = cfg
 
-        # Import AMO package
-        try:
-            from amo import AMOPolicy as AMOPolicyImpl
-            self._amo_impl = AMOPolicyImpl
-        except ImportError as e:
-            raise ImportError(
-                "AMO package not found. Please install: pip install -e ."
-            ) from e
+        # Import local AMO implementation (100% self-contained!)
+        from genPiHub.policies.amo_policy_impl import AMOPolicyImpl
+        self._amo_impl = AMOPolicyImpl
 
         # Create AMO policy instance
         logger.info(f"Loading AMO policy from {cfg.policy_file.parent if cfg.policy_file else 'default'}")

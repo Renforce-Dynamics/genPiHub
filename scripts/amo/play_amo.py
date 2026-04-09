@@ -15,9 +15,16 @@ Shows how to load and run policies and environments using the registry system.
 🎉 No direct imports from amo package - everything through Policy Hub!
 
 Usage examples:
-    python scripts/play_amo_genesis_hub.py
-    python scripts/play_amo_genesis_hub.py --vx 0.4 --interactive
-    python scripts/play_amo_genesis_hub.py --max-steps 100 --print-every 10
+    # Headless mode (default)
+    python scripts/amo/play_amo.py
+    python scripts/amo/play_amo.py --headless --max-steps 1000
+
+    # With viewer
+    python scripts/amo/play_amo.py --viewer
+    python scripts/amo/play_amo.py --viewer --vx 0.4 --interactive
+
+    # Other options
+    python scripts/amo/play_amo.py --max-steps 100 --print-every 10
 """
 
 from __future__ import annotations
@@ -47,7 +54,8 @@ def parse_args() -> argparse.Namespace:
     # Environment
     parser.add_argument("--device", type=str, default=None, choices=["cpu", "cuda"])
     parser.add_argument("--num-envs", type=int, default=1)
-    parser.add_argument("--viewer", action="store_true", help="Enable viewer")
+    parser.add_argument("--viewer", action="store_true", help="Enable viewer (default: headless)")
+    parser.add_argument("--headless", action="store_true", help="Disable viewer (explicit headless mode)")
 
     # Control
     parser.add_argument("--max-steps", type=int, default=100000)
@@ -55,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--print-every", type=int, default=100)
 
     # Policy
-    parser.add_argument("--model-dir", type=str, default=".reference/AMO", help="AMO model directory")
+    parser.add_argument("--model-dir", type=str, default="third_party/AMO", help="AMO model directory")
     parser.add_argument("--action-scale", type=float, default=0.25)
 
     # Commands
@@ -120,8 +128,12 @@ def create_amo_policy_config(args) -> AMOPolicyConfig:
 def main() -> int:
     args = parse_args()
 
+    # Handle viewer/headless flags
+    use_viewer = args.viewer and not args.headless
+
     print("="*60)
     print("AMO Policy via Policy Hub")
+    print(f"Mode: {'Viewer' if use_viewer else 'Headless'}")
     print("="*60)
 
     # Determine device
@@ -143,7 +155,7 @@ def main() -> int:
     amo_env_cfg = create_amo_genesis_env_config(
         num_envs=args.num_envs,
         backend=backend,
-        viewer=args.viewer,
+        viewer=use_viewer,
         enable_corruption=False,
         resampling_time=1e9,  # No resampling
         standing_envs_ratio=0.0,

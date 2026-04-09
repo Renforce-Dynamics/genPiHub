@@ -4,10 +4,10 @@ This module contains self-contained AMO environment configurations that do not
 require importing from the amo package.
 """
 
-from .env_cfg import AmoGenesisEnvCfg
-from .robot_cfg import G1_AMO_CFG
-from .actions import AmoActionsCfg
-from .observations import (
+from .genesislab.env_cfg import AmoGenesisEnvCfg
+from .genesislab.robot_cfg import G1_AMO_CFG
+from .genesislab.actions import AmoActionsCfg
+from .genesislab.observations import (
     amo_ang_vel_scaled,
     amo_rpy_roll_pitch,
     amo_dyaw_sin_cos,
