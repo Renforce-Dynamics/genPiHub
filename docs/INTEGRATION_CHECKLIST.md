@@ -289,9 +289,9 @@ python -m pydocstyle genPiHub/policies/{policy}_policy.py
 
 ### 总体进度
 
-- **已完成**: 1/9 (11%)
-- **进行中**: 0/9 (0%)
-- **待开始**: 8/9 (89%)
+- **已完成**: 2/9 (22%) ✅ AMO, CLOT
+- **进行中**: 1/9 (11%) 🔄 BeyondMimic
+- **待开始**: 6/9 (67%)
 
 ### 估计时间
 

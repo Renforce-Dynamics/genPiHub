@@ -121,6 +121,83 @@ def create_amo_genesis_env_config_with_options(
     return cfg
 
 
+def create_amo_genesis_env_config_with_usd_scene(
+    usd_scene_path: str,
+    num_envs: int = 1,
+    backend: str = "cuda",
+    viewer: bool = False,
+    enable_corruption: bool = False,
+    resampling_time: float = 1e9,
+    standing_envs_ratio: float = 0.0,
+    env_spacing: float = 2.5,
+    increase_collision_limits: bool = True,
+):
+    """Create AMO Genesis environment configuration with USD terrain.
+
+    This function creates an AMO environment with USD scene as terrain.
+    The USD is loaded as static terrain geometry.
+
+    Args:
+        usd_scene_path: Path to USD scene file (e.g., Scene.usd or Terrain.usd)
+        num_envs: Number of parallel environments
+        backend: Physics backend ("cuda" or "cpu")
+        viewer: Enable Genesis viewer
+        enable_corruption: Enable observation corruption/noise
+        resampling_time: Command resampling time (large value = no resampling)
+        standing_envs_ratio: Ratio of environments with standing command
+        env_spacing: Spacing between environments (for multi-env setup)
+        increase_collision_limits: Increase collision parameters for complex scenes
+
+    Returns:
+        AmoGenesisEnvCfg instance with USD terrain configured
+
+    Example:
+        >>> from genPiHub.configs import create_amo_genesis_env_config_with_usd_scene
+        >>> env_cfg = create_amo_genesis_env_config_with_usd_scene(
+        ...     usd_scene_path="path/to/Terrain.usd",
+        ...     num_envs=1,
+        ...     backend="cuda",
+        ...     viewer=True,
+        ... )
+        >>> env = GenesisEnv(cfg=genesis_cfg, device="cuda", env_cfg=env_cfg)
+    """
+    # Import from Policy Hub and GenesisLab
+    from genPiHub.envs.amo import AmoGenesisEnvCfg
+    from genesislab.components.terrains import TerrainCfg
+    from genesislab.engine.sim import RigidOptionsCfg
+
+    # Create base config
+    cfg = AmoGenesisEnvCfg()
+
+    # Configure scene
+    cfg.scene.num_envs = num_envs
+    cfg.scene.backend = backend
+    cfg.scene.viewer = viewer
+
+    # Use USD as terrain (terrain system approach)
+    cfg.scene.terrain = TerrainCfg(
+        terrain_type="usd",
+        usd_path=usd_scene_path,
+        env_spacing=env_spacing,
+    )
+
+    # Increase collision limits for complex scenes if needed
+    if increase_collision_limits:
+        cfg.scene.rigid_options = RigidOptionsCfg(
+            max_collision_pairs=1000000,  # Increase from default for complex scenes
+            enable_collision=True,
+        )
+
+    # Configure observations
+    cfg.observations.policy.enable_corruption = enable_corruption
+
+    # Configure commands
+    cfg.commands.base_velocity.resampling_time_range = (resampling_time, resampling_time)
+    cfg.commands.base_velocity.rel_standing_envs = standing_envs_ratio
+
+    return cfg
+
+
 # Convenience aliases
 build_amo_env_config = create_amo_genesis_env_config
 amo_env_config = create_amo_genesis_env_config

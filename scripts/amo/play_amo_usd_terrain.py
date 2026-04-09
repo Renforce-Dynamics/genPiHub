@@ -36,6 +36,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+# Ensure we import genPiHub from the local third_party directory
+# Use absolute path to avoid confusion with symlinks or relative paths
+_genPiHub_dir = Path("/home/ununtu/code/glab/genesislab/third_party/genPiHub").resolve()
+sys.path.insert(0, str(_genPiHub_dir))
+
 import argparse
 import time
 import numpy as np
