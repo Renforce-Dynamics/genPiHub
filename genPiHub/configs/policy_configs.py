@@ -106,10 +106,36 @@ class AMOPolicyConfig(PolicyConfig):
 
 @dataclass
 class CLOTPolicyConfig(PolicyConfig):
-    """Configuration for CLOT policy (placeholder)."""
+    """Configuration for CLOT (Closed-Loop Motion Tracking) policy.
+
+    CLOT uses AMP (Adversarial Motion Priors) for motion tracking.
+    """
 
     name: str = "CLOTPolicy"
-    # TODO: Add CLOT-specific parameters
+
+    # Motion library
+    motion_lib_dir: Optional[Path | str] = None  # Directory containing motion files
+    motion_files: list[str] = field(default_factory=list)  # Specific motion files to load
+
+    # AMP parameters
+    use_amp: bool = True  # Use AMP discriminator
+    amp_obs_dim: int = 0  # AMP observation dimension (auto-computed)
+
+    # Tracking parameters
+    tracking_sigma: float = 0.5  # Position tracking tolerance
+    tracking_sigma_vel: float = 0.1  # Velocity tracking tolerance
+
+    # Action parameters (CLOT-specific)
+    action_scale: float = 0.25  # Similar to AMO
+    action_clip: Optional[float] = 10.0  # Clip actions to prevent extreme movements
+
+    def __post_init__(self):
+        """Post-initialization for CLOT-specific validation."""
+        super().__post_init__()
+
+        # Convert motion lib path
+        if self.motion_lib_dir is not None and not isinstance(self.motion_lib_dir, Path):
+            self.motion_lib_dir = Path(self.motion_lib_dir)
 
 
 @dataclass
