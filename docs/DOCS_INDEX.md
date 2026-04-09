@@ -16,6 +16,8 @@ Welcome to genPiHub! This index helps you find the right documentation.
 | **Run tests** | [scripts/README.md](../scripts/README.md) |
 | **Understand migration** | [MIGRATION.md](MIGRATION.md) |
 | **API reference** | [QUICK_START.md](QUICK_START.md) |
+| **Integration plan** | [ROBOJUDO_INTEGRATION_PLAN.md](ROBOJUDO_INTEGRATION_PLAN.md) 🆕 |
+| **Integration checklist** | [INTEGRATION_CHECKLIST.md](INTEGRATION_CHECKLIST.md) 🆕 |
 
 ## 📖 Document Guide
 
