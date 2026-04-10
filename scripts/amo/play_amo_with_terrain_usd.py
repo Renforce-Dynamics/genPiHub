@@ -127,15 +127,18 @@ def main() -> int:
     policy_config = create_amo_policy_config(args)
     print(f"✅ Policy: {policy_config.obs_dof.num_dofs} DOFs")
 
+
+
     # Create environment with static Terrain USD
     print("\n[2/5] Creating environment with Terrain USD...")
     amo_env_cfg = create_amo_genesis_env_config_with_usd_scene(
-        usd_scene_path="data/assets/isaacsim_assets/Assets/Isaac/4.5/Isaac/Environments/Simple_Warehouse/warehouse.usd",
+        usd_scene_path="data/assets/psi0/107734119_with_physics.usd",
+        # usd_scene_path="data/assets/isaacsim_assets/Assets/Isaac/4.5/Isaac/Environments/Simple_Warehouse/warehouse.usd",
         num_envs=args.num_envs,
         backend=backend,
         viewer=use_viewer,
         enable_corruption=False,
-        increase_collision_limits=False,  # Not needed for static terrain
+        increase_collision_limits=True,  # Needed for complex scenes with many meshes
     )
 
     genesis_cfg = GenesisEnvConfig(

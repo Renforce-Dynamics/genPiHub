@@ -112,6 +112,7 @@ class AmoEventsCfg:
     )
 
 
+
 @configclass
 class AmoRewardsCfg:
     """Minimal rewards for AMO play mode (not used during policy rollout)."""
@@ -132,7 +133,7 @@ class AmoGenesisEnvCfg(ManagerBasedRlEnvCfg):
     actions: AmoActionsCfg = AmoActionsCfg()  # Use AMO-specific actions with correct offset
     commands: CommandsCfg = CommandsCfg()
     rewards: AmoRewardsCfg = AmoRewardsCfg()  # Use AMO-specific rewards
-    terminations: TerminationsCfg = TerminationsCfg()
+    terminations: TerminationsCfg = None # TerminationsCfg()
     events: AmoEventsCfg = AmoEventsCfg()
     curriculum: CurriculumCfg = CurriculumCfg()
 

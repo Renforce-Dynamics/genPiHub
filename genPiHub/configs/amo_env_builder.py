@@ -198,6 +198,78 @@ def create_amo_genesis_env_config_with_usd_scene(
     return cfg
 
 
+def create_amo_genesis_env_config_with_mesh_terrain(
+    mesh_path: str,
+    num_envs: int = 1,
+    backend: str = "cuda",
+    viewer: bool = False,
+    enable_corruption: bool = False,
+    resampling_time: float = 1e9,
+    standing_envs_ratio: float = 0.0,
+    env_spacing: float = 2.5,
+    increase_collision_limits: bool = True,
+):
+    """Create AMO environment config with mesh terrain.
+
+    Args:
+        mesh_path: Path to mesh file (.obj, .stl, .glb, .gltf)
+        num_envs: Number of parallel environments
+        backend: Physics backend ("cuda" or "cpu")
+        viewer: Enable Genesis viewer
+        enable_corruption: Enable observation corruption/noise
+        resampling_time: Command resampling time (large value = no resampling)
+        standing_envs_ratio: Ratio of environments with standing command
+        env_spacing: Grid spacing between environments
+        increase_collision_limits: Increase collision pair limits for complex meshes
+
+    Returns:
+        AmoGenesisEnvCfg with mesh terrain configured
+
+    Example:
+        >>> cfg = create_amo_genesis_env_config_with_mesh_terrain(
+        ...     mesh_path="data/assets/Barracks.glb",
+        ...     num_envs=1,
+        ...     viewer=True,
+        ... )
+        >>> env = GenesisEnv(cfg=genesis_cfg, device="cuda", env_cfg=env_cfg)
+    """
+    # Import from Policy Hub and GenesisLab
+    from genPiHub.envs.amo import AmoGenesisEnvCfg
+    from genesislab.components.terrains import TerrainCfg
+    from genesislab.engine.sim import RigidOptionsCfg
+
+    # Create base config
+    cfg = AmoGenesisEnvCfg()
+
+    # Configure scene
+    cfg.scene.num_envs = num_envs
+    cfg.scene.backend = backend
+    cfg.scene.viewer = viewer
+
+    # Use mesh as terrain (terrain system approach)
+    cfg.scene.terrain = TerrainCfg(
+        terrain_type="mesh",
+        mesh_path=mesh_path,
+        env_spacing=env_spacing,
+    )
+
+    # Increase collision limits for complex meshes if needed
+    if increase_collision_limits:
+        cfg.scene.rigid_options = RigidOptionsCfg(
+            max_collision_pairs=1000000,  # Increase from default for complex scenes
+            enable_collision=True,
+        )
+
+    # Configure observations
+    cfg.observations.policy.enable_corruption = enable_corruption
+
+    # Configure commands
+    cfg.commands.base_velocity.resampling_time_range = (resampling_time, resampling_time)
+    cfg.commands.base_velocity.rel_standing_envs = standing_envs_ratio
+
+    return cfg
+
+
 # Convenience aliases
 build_amo_env_config = create_amo_genesis_env_config
 amo_env_config = create_amo_genesis_env_config

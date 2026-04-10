@@ -1,50 +1,22 @@
 #!/usr/bin/env python3
-"""Run AMO policy on USD terrain (Scene.usd).
+"""Run AMO policy on mesh terrain (GLB/OBJ/STL/GLTF).
 
-This script demonstrates deploying AMO policy on a custom USD terrain,
-allowing the humanoid to walk in realistic architectural environments.
+This script demonstrates deploying AMO policy on mesh terrain files.
 
-Features:
-- ✅ AMO policy via Policy Hub
-- ✅ USD terrain support (Scene.usd)
-- ✅ Multi-environment grid layout
-- ✅ Interactive viewer controls
-- ✅ Keyboard command control
-
-Usage examples:
-    # Basic: Run with viewer on USD terrain
-    python scripts/amo/play_amo_usd_terrain.py --viewer
-
-    # Interactive control
-    python scripts/amo/play_amo_usd_terrain.py --viewer --interactive
-
-    # Custom USD file
-    python scripts/amo/play_amo_usd_terrain.py --viewer --usd-path path/to/your/scene.usd
-
-    # Multiple environments
-    python scripts/amo/play_amo_usd_terrain.py --viewer --num-envs 4 --env-spacing 12.0
-
-    # Walk forward at 0.5 m/s
-    python scripts/amo/play_amo_usd_terrain.py --viewer --vx 0.5
-
-    # Headless test
-    python scripts/amo/play_amo_usd_terrain.py --max-steps 500
+Usage:
+    python scripts/amo/play_amo_mesh_terrain.py --viewer
+    python scripts/amo/play_amo_mesh_terrain.py --viewer --mesh-path data/assets/Barracks.glb
+    python scripts/amo/play_amo_mesh_terrain.py --viewer --interactive
 """
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-# Ensure we import genPiHub from the local third_party directory
-# Use absolute path to avoid confusion with symlinks or relative paths
-_genPiHub_dir = Path("/home/ununtu/code/glab/genesislab/third_party/genPiHub").resolve()
-sys.path.insert(0, str(_genPiHub_dir))
-
 import argparse
+import os
 import time
 import numpy as np
 import torch
+from pathlib import Path
 
 # Import from Policy Hub
 from genPiHub import load_policy
@@ -61,7 +33,7 @@ from genesislab.components.terrains import TerrainCfg
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Play AMO policy on USD terrain",
+        description="Play AMO policy on mesh terrain",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
@@ -71,18 +43,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--viewer", action="store_true", help="Enable viewer (recommended!)")
     parser.add_argument("--headless", action="store_true", help="Disable viewer (explicit headless mode)")
 
-    # USD Terrain
+    # Mesh Terrain
     parser.add_argument(
-        "--usd-path",
+        "--mesh-path",
         type=str,
-        default="third_party/genPiHub/data/assets/CWDL_LW_Assets_20260310/Scene.usd",
-        help="Path to USD terrain file",
+        default="data/assets/modern_apartment.glb",
+        help="Path to mesh file (.obj, .stl, .glb, .gltf)",
     )
     parser.add_argument(
         "--env-spacing",
         type=float,
-        default=10.0,
+        default=4.0,
         help="Spacing between environments (meters)",
+    )
+    parser.add_argument(
+        "--decompose-threshold",
+        type=float,
+        default=float("inf"),
+        help="Convex decomposition error threshold (0.0=full, inf=none)",
+    )
+    parser.add_argument(
+        "--sdf-cell-size",
+        type=float,
+        default=0.1,
+        help="SDF cell size for collision detection",
     )
 
     # Control
@@ -104,14 +88,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def create_amo_policy_config(args) -> AMOPolicyConfig:
-    """Create AMO policy configuration.
-
-    Args:
-        args: Command line arguments
-
-    Returns:
-        AMOPolicyConfig instance
-    """
+    """Create AMO policy configuration."""
     model_dir = Path(args.model_dir)
 
     # AMO DOF configuration (23 DOF G1)
@@ -152,26 +129,26 @@ def create_amo_policy_config(args) -> AMOPolicyConfig:
     )
 
 
-def create_amo_usd_terrain_env_config(
+def create_amo_mesh_terrain_env_config(
     args,
-    usd_path: str,
+    mesh_path: str,
     num_envs: int,
     env_spacing: float,
     backend: str,
     viewer: bool,
 ):
-    """Create AMO environment configuration with USD terrain.
+    """Create AMO environment configuration with mesh terrain.
 
     Args:
         args: Command line arguments
-        usd_path: Path to USD terrain file
+        mesh_path: Path to mesh file (.obj, .stl, .glb, .gltf)
         num_envs: Number of environments
         env_spacing: Environment spacing in meters
         backend: Physics backend
         viewer: Enable viewer
 
     Returns:
-        AmoGenesisEnvCfg with USD terrain
+        AmoGenesisEnvCfg with mesh terrain
     """
     # Import AMO environment config
     from genPiHub.envs.amo import AmoGenesisEnvCfg
@@ -179,51 +156,56 @@ def create_amo_usd_terrain_env_config(
     # Create base AMO config
     cfg = AmoGenesisEnvCfg()
 
+    # Set robot spawn position from args
+    cfg.scene.robots["robot"].initial_pose.pos = [0, 0, 1]
+    cfg.scene.sim_options.gravity = [0, 0, 0]
+
+    # CRITICAL: Reduce timestep to avoid NaN in rigid body solver
+    cfg.scene.dt = 0.001  # Reduce from 0.005 to 0.001
+    cfg.scene.substeps = 5  # Increase substeps for stability
+
     # Configure scene
     cfg.scene.num_envs = num_envs
     cfg.scene.backend = backend
     cfg.scene.viewer = viewer
 
-    # ⭐ Replace plane terrain with USD terrain
+    # Replace plane terrain with mesh terrain
     cfg.scene.terrain = TerrainCfg(
-        terrain_type="usd",
-        usd_path=usd_path,
+        terrain_type="mesh",
+        mesh_path=mesh_path,
         env_spacing=env_spacing,
+        mesh_decompose_error_threshold=args.decompose_threshold,
+        mesh_sdf_cell_size=args.sdf_cell_size,
     )
 
     # Configure observations (disable corruption for testing)
     cfg.observations.policy.enable_corruption = False
 
-    # Configure commands (no resampling for manual control)
+    # Configure commands (large resampling time = static command)
     cfg.commands.base_velocity.resampling_time_range = (1e9, 1e9)
-    cfg.commands.base_velocity.rel_standing_envs = 0.0
+
+    # Set initial command from args
+    cfg.commands.base_velocity.ranges.lin_vel_x = (args.vx, args.vx)
+    cfg.commands.base_velocity.ranges.lin_vel_y = (args.vy, args.vy)
+    cfg.commands.base_velocity.ranges.ang_vel_z = (args.yaw_rate, args.yaw_rate)
 
     return cfg
 
 
-def main() -> int:
+def main():
     args = parse_args()
 
-    # Handle viewer/headless flags
+    # Handle viewer/headless logic
     use_viewer = args.viewer and not args.headless
 
-    print("=" * 80)
-    print("🏃 AMO Policy on USD Terrain")
-    print("=" * 80)
-    print(f"Mode: {'🎬 Viewer' if use_viewer else '⚙️  Headless'}")
-    print(f"USD terrain: {args.usd_path}")
-    print(f"Environments: {args.num_envs}")
-    print(f"Env spacing: {args.env_spacing}m")
-    print("=" * 80)
-
-    # Validate USD file
+    # Check mesh file exists
     import os
-    if not os.path.exists(args.usd_path):
-        print(f"\n❌ ERROR: USD file not found: {args.usd_path}")
-        print("\n💡 Please ensure the Scene.usd file exists at the specified location.")
+    if not os.path.exists(args.mesh_path):
+        print(f"\n❌ ERROR: Mesh file not found: {args.mesh_path}")
+        print("\n💡 Please ensure the mesh file exists at the specified location.")
         return 1
 
-    print(f"\n✅ USD file found: {os.path.basename(args.usd_path)}")
+    print(f"\n✅ Mesh file found: {os.path.basename(args.mesh_path)}")
 
     # Determine device
     backend = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -238,13 +220,13 @@ def main() -> int:
     policy_config = create_amo_policy_config(args)
     print(f"✅ Policy config: {policy_config.obs_dof.num_dofs} DOFs, {policy_config.freq}Hz")
 
-    # Create environment with USD terrain
-    print(f"\n[2/4] Creating environment with USD terrain...")
+    # Create environment with mesh terrain
+    print(f"\n[2/4] Creating environment with mesh terrain...")
 
-    # Create AMO environment config with USD terrain
-    amo_env_cfg = create_amo_usd_terrain_env_config(
+    # Create AMO environment config with mesh terrain
+    amo_env_cfg = create_amo_mesh_terrain_env_config(
         args=args,
-        usd_path=args.usd_path,
+        mesh_path=args.mesh_path,
         num_envs=args.num_envs,
         env_spacing=args.env_spacing,
         backend=backend,
@@ -259,7 +241,8 @@ def main() -> int:
 
     env = GenesisEnv(cfg=genesis_cfg, device=backend, env_cfg=amo_env_cfg)
     print(f"✅ Environment: {env.num_envs} envs, {env.num_dofs} DOFs")
-    print(f"   Terrain: USD (grid-based, {args.env_spacing}m spacing)")
+    print(f"   Terrain: Mesh (grid-based, {args.env_spacing}m spacing)")
+    print(f"   Collision: decompose_threshold={args.decompose_threshold:.2g}, sdf_cell_size={args.sdf_cell_size}")
 
     # Load AMO policy
     print("\n[3/4] Loading AMO policy...")
@@ -267,112 +250,74 @@ def main() -> int:
     policy = load_policy("AMOPolicy", **policy_kwargs)
     print(f"✅ Policy loaded: {policy.cfg.name}")
     print(f"   Device: {policy.device}")
-    print(f"   Action scale: {policy.action_scale}")
+
+    # Deploy policy
+    print("\n[4/4] Deploying policy...")
+    print(f"✅ Running AMO on mesh terrain: {os.path.basename(args.mesh_path)}")
+    print(f"   Command: vx={args.vx:.2f} m/s, vy={args.vy:.2f} m/s, yaw_rate={args.yaw_rate:.2f} rad/s")
 
     # Setup command state
-    state = CommandState(
-        vx=args.vx,
-        vy=args.vy,
-        yaw_rate=args.yaw_rate,
-        height=args.height,
-        torso_yaw=0.0,
-        torso_pitch=0.0,
-        torso_roll=0.0,
-        arm_enable=0.0,
-    )
+    cmd_state = CommandState(vx=args.vx, vy=args.vy, yaw_rate=args.yaw_rate, height=args.height)
 
-    # Setup interactive controller if requested
-    controller = None
+    # Interactive keyboard control
+    terminal_ctrl = None
     if args.interactive:
-        controller = TerminalController(state)
-        print("\n✅ Interactive mode enabled")
-        print("   Controls: w/s=vx, a/d=yaw, e/c=vy, z/x=height, q=quit")
-        controller.start()
-    else:
-        print(f"\n✅ Fixed command: vx={args.vx:.2f} m/s, vy={args.vy:.2f} m/s, yaw={args.yaw_rate:.2f} rad/s")
+        terminal_ctrl = TerminalController()
+        print("\n⌨️  Interactive mode enabled")
+        print("   w/s: forward/backward, a/d: left/right, q/e: turn left/right")
+        print("   r/f: up/down, x: stop, Ctrl+C: quit")
 
-    # Reset
-    print("\n[4/4] Resetting environment...")
+    # Reset environment and policy
     env.reset()
     policy.reset()
-    print("✅ Ready to run!")
-
-    # Print info for viewer mode
-    if use_viewer:
-        print("\n" + "=" * 80)
-        print("👁️  VIEWER CONTROLS:")
-        print("   - Mouse drag: Rotate camera")
-        print("   - Mouse wheel: Zoom in/out")
-        print("   - Arrow keys: Pan camera")
-        if controller:
-            print("\n⌨️  KEYBOARD CONTROLS:")
-            print("   - W/S: Forward/backward velocity")
-            print("   - A/D: Yaw left/right")
-            print("   - E/C: Lateral velocity left/right")
-            print("   - Z/X: Height up/down")
-            print("   - Q: Quit")
-        print("   - Ctrl+C: Emergency stop")
-        print("=" * 80)
+    print(f"\n▶️  Starting deployment (max {args.max_steps} steps)...")
 
     # Main loop
-    print(f"\n▶️  Running for {args.max_steps} steps...\n")
+    start_time = time.time()
 
     try:
-        t0 = time.time()
         for step in range(args.max_steps):
-            # Get environment state
+            # Get environment data
             env_data = env.get_data()
 
-            # Poll keyboard if interactive
-            quit_now = False
-            if controller:
-                quit_now = controller.poll()
-                if quit_now:
-                    print("\n🛑 Quit command received")
-                    break
-                commands = controller.state.as_array()
-            else:
-                commands = state.as_array()
+            # Update command from keyboard if interactive
+            if terminal_ctrl:
+                cmd_state = terminal_ctrl.update_command(cmd_state)
 
-            # Add commands to environment data
-            env_data["commands"] = commands
+            # Set commands in env_data
+            env_data["commands"] = cmd_state.as_array()
 
-            # Get observation and action
+            # Get observation and action from policy
             obs, extras = policy.get_observation(env_data, {})
             action = policy.get_action(obs)
 
             # Step environment
             step_result = env.step(action)
 
-            # Policy reset if needed
+            # Handle episode termination
             if step_result.get("terminated", False).any() or step_result.get("truncated", False).any():
                 policy.reset()
 
-            # Print status
+            # Print stats
             if step % args.print_every == 0:
                 base_pos = env.base_pos
-                fps = (step + 1) / max(1e-6, time.time() - t0)
+                elapsed = time.time() - start_time
+                fps = (step + 1) / max(1e-6, elapsed)
                 print(
-                    f"Step {step:06d} | FPS {fps:6.1f} | "
-                    f"Pos [{base_pos[0]:6.2f}, {base_pos[1]:6.2f}, {base_pos[2]:5.3f}] | "
-                    f"Cmd [vx={commands[0]:.2f}, vy={commands[2]:.2f}, yaw={commands[1]:.2f}]"
+                    f"step={step:06d} fps={fps:6.1f} "
+                    f"pos=[{base_pos[0]:6.2f}, {base_pos[1]:6.2f}, {base_pos[2]:5.3f}] "
+                    f"cmd: vx={cmd_state.vx:+.2f} vy={cmd_state.vy:+.2f} yaw={cmd_state.yaw_rate:+.2f}"
                 )
 
-            # Post-step callback
+            # Policy post-step callback
             policy.post_step_callback()
 
     except KeyboardInterrupt:
-        print("\n\n⚠️  Interrupted by user (Ctrl+C)")
-    finally:
-        if controller:
-            controller.stop()
-        del env
+        print("\n\n⏹️  Stopped by user")
 
-    print("\n" + "=" * 80)
-    print("✅ Done! AMO policy successfully deployed on USD terrain")
-    print("=" * 80)
+    print(f"\n✅ Done! Ran {args.max_steps} steps in {time.time() - start_time:.1f}s")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
