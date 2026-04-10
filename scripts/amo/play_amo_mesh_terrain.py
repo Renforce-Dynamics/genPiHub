@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--mesh-path",
         type=str,
-        default="data/assets/modern_apartment.glb",
+        default="data/assets/test_plane.obj",
         help="Path to mesh file (.obj, .stl, .glb, .gltf)",
     )
     parser.add_argument(
@@ -163,6 +163,10 @@ def create_amo_mesh_terrain_env_config(
     # CRITICAL: Reduce timestep to avoid NaN in rigid body solver
     cfg.scene.dt = 0.001  # Reduce from 0.005 to 0.001
     cfg.scene.substeps = 5  # Increase substeps for stability
+
+    # HDRI disabled: requires LuisaRenderPy which is not available
+    # To enable: install LuisaRenderPy and uncomment the line below
+    # cfg.scene.vis_options.env_surface = "data/assets/hdri/citrus_orchard_road_puresky_4k.hdr"
 
     # Configure scene
     cfg.scene.num_envs = num_envs

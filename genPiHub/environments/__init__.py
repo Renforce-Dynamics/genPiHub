@@ -2,6 +2,7 @@
 
 from genPiHub.utils.registry import Registry
 from .base_env import Environment
+from .genesis_env import GenesisEnv
 
 # Create environment registry
 environment_registry = Registry(package="genPiHub.environments", base_class=Environment)

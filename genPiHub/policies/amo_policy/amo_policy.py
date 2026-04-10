@@ -42,7 +42,7 @@ class AMOPolicy(Policy):
         self.cfg_amo: AMOPolicyConfig = cfg
 
         # Import local AMO implementation (100% self-contained!)
-        from genPiHub.policies.amo_policy_impl import AMOPolicyImpl
+        from .amo_policy_impl import AMOPolicyImpl
         self._amo_impl = AMOPolicyImpl
 
         # Create AMO policy instance
