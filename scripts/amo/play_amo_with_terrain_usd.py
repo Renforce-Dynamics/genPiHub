@@ -130,9 +130,11 @@ def main() -> int:
 
 
     # Create environment with static Terrain USD
+    # Note: USD file must be prepared for Genesis using prepare_usd_for_genesis.py
+    # This adds physics schemas and bakes transforms to handle mirrored geometry
     print("\n[2/5] Creating environment with Terrain USD...")
     amo_env_cfg = create_amo_genesis_env_config_with_usd_scene(
-        usd_scene_path="data/assets/psi0/107734119_with_physics.usd",
+        usd_scene_path="data/assets/psi0/107734119_genesis_ready.usd",
         # usd_scene_path="data/assets/isaacsim_assets/Assets/Isaac/4.5/Isaac/Environments/Simple_Warehouse/warehouse.usd",
         num_envs=args.num_envs,
         backend=backend,

@@ -131,6 +131,7 @@ def create_amo_genesis_env_config_with_usd_scene(
     standing_envs_ratio: float = 0.0,
     env_spacing: float = 2.5,
     increase_collision_limits: bool = True,
+    dt: float = 0.001,  # Smaller timestep for complex USD scenes (1ms for stability)
 ):
     """Create AMO Genesis environment configuration with USD terrain.
 
@@ -147,6 +148,7 @@ def create_amo_genesis_env_config_with_usd_scene(
         standing_envs_ratio: Ratio of environments with standing command
         env_spacing: Spacing between environments (for multi-env setup)
         increase_collision_limits: Increase collision parameters for complex scenes
+        dt: Physics simulation timestep (default 0.002 for stability with complex USD)
 
     Returns:
         AmoGenesisEnvCfg instance with USD terrain configured
@@ -173,6 +175,7 @@ def create_amo_genesis_env_config_with_usd_scene(
     cfg.scene.num_envs = num_envs
     cfg.scene.backend = backend
     cfg.scene.viewer = viewer
+    cfg.scene.dt = dt  # Set smaller timestep for stability with complex geometry
 
     # Use USD as terrain (terrain system approach)
     cfg.scene.terrain = TerrainCfg(
@@ -181,11 +184,12 @@ def create_amo_genesis_env_config_with_usd_scene(
         env_spacing=env_spacing,
     )
 
-    # Increase collision limits for complex scenes if needed
+    # Increase collision limits and use more stable solver for complex scenes
     if increase_collision_limits:
         cfg.scene.rigid_options = RigidOptionsCfg(
             max_collision_pairs=1000000,  # Increase from default for complex scenes
             enable_collision=True,
+            constraint_solver="GaussSeidel",  # More stable than Newton for complex geometry
         )
 
     # Configure observations

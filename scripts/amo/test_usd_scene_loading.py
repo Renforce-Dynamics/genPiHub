@@ -28,7 +28,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Test USD scene loading")
     parser.add_argument("--viewer", action="store_true", help="Enable viewer")
     parser.add_argument("--full-scene", action="store_true", help="Test full Scene.usd (default: Terrain.usd)")
-    parser.add_argument("--max-steps", type=int, default=200, help="Number of steps to run")
+    parser.add_argument("--max-steps", type=int, default=1000, help="Number of steps to run")
     return parser.parse_args()
 
 
@@ -36,16 +36,10 @@ def main():
     args = parse_args()
 
     # Determine which USD to test
-    if args.full_scene:
-        usd_path = "third_party/genPiHub/data/assets/CWDL_LW_Assets_20260310/Scene.usd"
-        usd_name = "Scene.usd (完整场景，254关节家具)"
-        load_articulation = True
-        increase_collision = True
-    else:
-        usd_path = "third_party/genPiHub/data/assets/CWDL_LW_Assets_20260310/Terrain.usd"
-        usd_name = "Terrain.usd (静态Floor/Wall/Ceiling)"
-        load_articulation = False
-        increase_collision = False
+    usd_path = "third_party/genPiHub/data/assets/CWDL_LW_Assets_20260310/Scene.usd"
+    usd_name = "Scene.usd (完整场景，254关节家具)"
+    load_articulation = True
+    increase_collision = True
 
     print("=" * 80)
     print("USD场景加载测试 (环境物体系统)")
@@ -65,11 +59,10 @@ def main():
         num_envs=1,
         backend="cuda",
         viewer=args.viewer,
-        load_articulation=load_articulation,
         increase_collision_limits=increase_collision,
     )
     print(f"✅ 配置创建成功")
-    print(f"   - 环境物体: {len(env_cfg.scene.environment_objects.usd_objects)} USD objects")
+    # print(f"   - 环境物体: {len(env_cfg.scene.environment_objects.usd_objects)} USD objects")
 
     # Create environment
     print("\n[2/4] 构建环境...")
