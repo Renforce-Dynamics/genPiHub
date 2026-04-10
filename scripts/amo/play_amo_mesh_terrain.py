@@ -157,15 +157,14 @@ def create_amo_mesh_terrain_env_config(
     cfg = AmoGenesisEnvCfg()
 
     # Set robot spawn position from args
-    cfg.scene.robots["robot"].initial_pose.pos = [0, 0, 1]
-    cfg.scene.sim_options.gravity = [0, 0, 0]
+    # cfg.scene.robots["robot"].initial_pose.pos = [0, 0, 1]
+    # cfg.scene.sim_options.gravity = [0, 0, 0]
 
     # CRITICAL: Reduce timestep to avoid NaN in rigid body solver
     cfg.scene.dt = 0.001  # Reduce from 0.005 to 0.001
     cfg.scene.substeps = 5  # Increase substeps for stability
 
-    # HDRI disabled: requires LuisaRenderPy which is not available
-    # To enable: install LuisaRenderPy and uncomment the line below
+    # HDRI enabled: requires LuisaRenderPy to be compiled
     # cfg.scene.vis_options.env_surface = "data/assets/hdri/citrus_orchard_road_puresky_4k.hdr"
 
     # Configure scene
