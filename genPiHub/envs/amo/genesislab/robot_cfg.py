@@ -132,7 +132,7 @@ G1_AMO_CFG = RobotCfg(
     morph_path=str(AMO_ASSET_DIR / "g1.xml"),
     initial_pose=InitialPoseCfg(
         pos=[0.0, 0.0, 0.793],  # Spawn at AMO training height
-        quat=[0.0, 0.0, 0.0, 1.0],
+        quat=[1.0, 0.0, 0.0, 0.0],
     ),
     fixed_base=False,
     control_dofs=None,

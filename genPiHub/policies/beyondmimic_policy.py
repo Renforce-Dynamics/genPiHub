@@ -208,6 +208,10 @@ class BeyondMimicPolicy(Policy):
         # Model is ONNX session, not PyTorch
         self.model = self.session
 
+        # BeyondMimic-specific: yaw alignment
+        self.init_to_world = None  # Transformation matrix for yaw alignment
+        self.step_count = 0
+
     def reset(self):
         """Reset BeyondMimic policy state."""
         self.last_action = np.zeros(self.num_actions)
@@ -215,6 +219,10 @@ class BeyondMimicPolicy(Policy):
         self.play_speed = 1.0
         self.flag_motion_done = False
         self.command = None
+
+        # Reset yaw alignment
+        self.init_to_world = None
+        self.step_count = 0
 
         # Warm up model if available
         if self.session:
@@ -225,6 +233,87 @@ class BeyondMimicPolicy(Policy):
                     self.get_action(dummy_obs)
                 except:
                     pass  # Ignore warm-up errors
+
+    @staticmethod
+    def _quat_mul(q1: np.ndarray, q2: np.ndarray) -> np.ndarray:
+        """Quaternion multiplication (Hamilton product).
+
+        Args:
+            q1, q2: Quaternions in [w, x, y, z] format
+
+        Returns:
+            Product quaternion [w, x, y, z]
+        """
+        w1, x1, y1, z1 = q1[0], q1[1], q1[2], q1[3]
+        w2, x2, y2, z2 = q2[0], q2[1], q2[2], q2[3]
+
+        ww = (z1 + x1) * (x2 + y2)
+        yy = (w1 - y1) * (w2 + z2)
+        zz = (w1 + y1) * (w2 - z2)
+        xx = ww + yy + zz
+        qq = 0.5 * (xx + (z1 - x1) * (x2 - y2))
+
+        w = qq - ww + (z1 - y1) * (y2 - z2)
+        x = qq - xx + (x1 + w1) * (x2 + w2)
+        y = qq - yy + (w1 - x1) * (y2 + z2)
+        z = qq - zz + (z1 + y1) * (w2 - x2)
+
+        return np.array([w, x, y, z], dtype=np.float32)
+
+    @staticmethod
+    def _matrix_from_quat(q: np.ndarray) -> np.ndarray:
+        """Convert quaternion to rotation matrix.
+
+        Args:
+            q: Quaternion in [w, x, y, z] format
+
+        Returns:
+            3x3 rotation matrix
+        """
+        w, x, y, z = q
+        return np.array([
+            [1 - 2 * (y**2 + z**2), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+            [2 * (x * y + z * w), 1 - 2 * (x**2 + z**2), 2 * (y * z - x * w)],
+            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x**2 + y**2)]
+        ], dtype=np.float32)
+
+    @staticmethod
+    def _yaw_quat(q: np.ndarray) -> np.ndarray:
+        """Extract yaw component from quaternion.
+
+        Args:
+            q: Quaternion in [w, x, y, z] format
+
+        Returns:
+            Yaw-only quaternion [w, 0, 0, z]
+        """
+        w, x, y, z = q
+        yaw = np.arctan2(2 * (w * z + x * y), 1 - 2 * (y**2 + z**2))
+        return np.array([np.cos(yaw / 2), 0, 0, np.sin(yaw / 2)], dtype=np.float32)
+
+    @staticmethod
+    def _euler_to_quat(angle: float, axis: str) -> np.ndarray:
+        """Convert single-axis Euler angle to quaternion.
+
+        Args:
+            angle: Rotation angle in radians
+            axis: Rotation axis ('x', 'y', or 'z')
+
+        Returns:
+            Quaternion [w, x, y, z]
+        """
+        half_angle = angle * 0.5
+        cos_half = np.cos(half_angle)
+        sin_half = np.sin(half_angle)
+
+        if axis == 'x':
+            return np.array([cos_half, sin_half, 0.0, 0.0], dtype=np.float32)
+        elif axis == 'y':
+            return np.array([cos_half, 0.0, sin_half, 0.0], dtype=np.float32)
+        elif axis == 'z':
+            return np.array([cos_half, 0.0, 0.0, sin_half], dtype=np.float32)
+        else:
+            raise ValueError(f"Invalid axis: {axis}")
 
     def get_observation(
         self, env_data: Dict[str, Any], ctrl_data: Dict[str, Any]
@@ -243,46 +332,96 @@ class BeyondMimicPolicy(Policy):
         dof_vel = env_data.get("dof_vel", np.zeros(self.num_actions, dtype=np.float32))
         ang_vel = env_data.get("base_ang_vel", np.zeros(3, dtype=np.float32))
         lin_vel = env_data.get("base_lin_vel", np.zeros(3, dtype=np.float32))
-        base_quat = env_data.get("base_quat", np.array([0, 0, 0, 1], dtype=np.float32))
+        base_quat = env_data.get("base_quat", np.array([1, 0, 0, 0], dtype=np.float32))  # [w,x,y,z]
 
         # Get motion command (joint positions and velocities from reference)
         if self.use_motion_from_model and self.command is not None:
             # Use motion from model
-            command = np.concatenate([
-                self.command.get("joint_pos", dof_pos),
-                self.command.get("joint_vel", dof_vel)
-            ])
+            ref_joint_pos = self.command.get("joint_pos", dof_pos)
+            ref_joint_vel = self.command.get("joint_vel", dof_vel)
+            command = np.concatenate([ref_joint_pos, ref_joint_vel])
         else:
             # Use external motion command
             command = ctrl_data.get("motion_command", np.concatenate([dof_pos, dof_vel]))
+            ref_joint_pos = dof_pos
+            ref_joint_vel = dof_vel
 
-        # Convert quaternion to rotation matrix (first two columns flattened)
-        from scipy.spatial.transform import Rotation as R
-        rot_mat = R.from_quat(base_quat).as_matrix()
-        ori_obs = rot_mat[:, :2].flatten()  # (6,)
+        # Compute relative joint positions (same as FSMDeployG1)
+        joint_pos_rel = dof_pos - self.default_dof_pos
 
-        # Build observation components
+        # BeyondMimic uses TORSO orientation, not pelvis!
+        # Convert pelvis quat to torso quat by adding waist joint rotations
+        # Waist joints: [2]=waist_yaw, [5]=waist_roll, [8]=waist_pitch in BeyondMimic order
+        waist_yaw = joint_pos_rel[2]     # waist_yaw_joint
+        waist_roll = joint_pos_rel[5]    # waist_roll_joint
+        waist_pitch = joint_pos_rel[8]   # waist_pitch_joint
+
+        quat_yaw = self._euler_to_quat(waist_yaw, 'z')
+        quat_roll = self._euler_to_quat(waist_roll, 'x')
+        quat_pitch = self._euler_to_quat(waist_pitch, 'y')
+
+        # Compose rotations: torso = pelvis * yaw * roll * pitch
+        temp1 = self._quat_mul(quat_roll, quat_pitch)
+        temp2 = self._quat_mul(quat_yaw, temp1)
+        robot_quat = self._quat_mul(base_quat, temp2)
+
+        # Get reference anchor orientation (body 7 is torso/pelvis in BeyondMimic)
+        if self.use_motion_from_model and self.command is not None and "body_quat_w" in self.command:
+            # body_quat_w shape is (14, 4) for 14 bodies
+            ref_anchor_quat = self.command["body_quat_w"][7]  # Torso/anchor body
+        else:
+            ref_anchor_quat = np.array([1, 0, 0, 0], dtype=np.float32)
+
+        # Yaw alignment: compute init_to_world on first step (same as FSMDeployG1)
+        if self.step_count < 2:
+            init_to_anchor = self._matrix_from_quat(self._yaw_quat(ref_anchor_quat))
+            world_to_anchor = self._matrix_from_quat(self._yaw_quat(robot_quat))
+            self.init_to_world = world_to_anchor @ init_to_anchor.T
+            self.step_count += 1
+
+            # Return zero observation on first frames (not ready yet)
+            if self.step_count == 1:
+                obs = np.zeros(self.num_obs, dtype=np.float32)
+                extras = {
+                    "timestep": self.timestep,
+                    "motion_done": self.flag_motion_done,
+                }
+                return obs, extras
+
+        # Compute motion_anchor_ori_b (relative orientation)
+        robot_mat = self._matrix_from_quat(robot_quat)
+        ref_anchor_mat = self._matrix_from_quat(ref_anchor_quat)
+        motion_anchor_ori_b = robot_mat.T @ self.init_to_world @ ref_anchor_mat
+
+        # Orientation observation: first two columns of rotation matrix flattened (6 dims)
+        ori_obs = motion_anchor_ori_b[:, :2].flatten()
+
+        # Build observation following FSMDeployG1 order
+        # WOSE mode: ref_pos(29) + ref_vel(29) + ori(6) + ang_vel(3) + joint_pos_rel(29) + joint_vel(29) + last_action(29) = 154
+        # With SE: add anchor_pos(3) + lin_vel(3) = 160
         obs_components = [
-            command,  # Motion command (58 for 29 DOF)
+            ref_joint_pos,     # Reference joint positions (29)
+            ref_joint_vel,     # Reference joint velocities (29)
         ]
 
-        # Add anchor position and orientation (if motion from model or external)
+        # Add anchor position if using state estimator
         if not self.without_state_estimator:
-            # Placeholder for anchor position (would need actual anchor computation)
+            # Placeholder for anchor position
             anchor_pos_b = np.zeros(3, dtype=np.float32)
             obs_components.append(anchor_pos_b)
 
         obs_components.extend([
-            ori_obs,  # Orientation (6)
+            ori_obs,           # Motion anchor orientation (6)
         ])
 
+        # Add linear velocity if using state estimator
         if not self.without_state_estimator:
             obs_components.append(lin_vel)  # Linear velocity (3)
 
         obs_components.extend([
-            ang_vel,  # Angular velocity (3)
-            dof_pos - self.default_dof_pos,  # Relative joint positions (29)
-            dof_vel,  # Joint velocities (29)
+            ang_vel,           # Angular velocity (3)
+            joint_pos_rel,     # Relative joint positions (29)
+            dof_vel,           # Joint velocities (29)
             self.last_action,  # Last action (29)
         ])
 

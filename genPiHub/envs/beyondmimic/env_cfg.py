@@ -220,7 +220,7 @@ class BeyondMimicGenesisEnvCfg(ManagerBasedRlEnvCfg):
     actions: BeyondMimicActionsCfg = BeyondMimicActionsCfg()
     commands: CommandsCfg = CommandsCfg()
     rewards: BeyondMimicRewardsCfg = BeyondMimicRewardsCfg()
-    terminations: TerminationsCfg = TerminationsCfg()
+    terminations: TerminationsCfg = None # TerminationsCfg()
     events: BeyondMimicEventsCfg = BeyondMimicEventsCfg()
     curriculum: CurriculumCfg = CurriculumCfg()
 

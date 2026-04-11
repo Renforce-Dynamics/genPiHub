@@ -28,7 +28,7 @@ class BeyondMimicActionsCfg:
 
     joint_pos: mdp.GenesisOriginalActionCfg = mdp.GenesisOriginalActionCfg(
         entity_name="robot",
-        scale=1.0,  # Scaling done in policy with per-joint scales
-        use_default_offset=False,  # Don't use entity's default (wrong order!)
-        offset=BEYONDMIMIC_DEFAULT_JOINT_POS_DICT,  # Explicitly specify in BeyondMimic order
+        scale=1.0,  # No additional scaling (policy already applies action_scales)
+        use_default_offset=True,  # Add default positions as offset: target = default_pos + action
+        offset=0.0,  # Use entity's default_joint_pos from MJCF
     )
