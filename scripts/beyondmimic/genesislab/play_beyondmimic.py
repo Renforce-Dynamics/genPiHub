@@ -57,7 +57,7 @@ from genPiHub.configs import (
 )
 from genPiHub.tools import DOFConfig
 from genPiHub.environments import GenesisEnv
-from genPiHub.envs.beyondmimic.robot_cfg import (
+from genPiHub.envs.beyondmimic.genesislab.robot_cfg import (
     G1_29DOF_BEYONDMIMIC_NAMES,
     G1_BEYONDMIMIC_DEFAULT_POS,
     G1_BEYONDMIMIC_ACTION_SCALES,

@@ -26,7 +26,7 @@ from pathlib import Path
 # BeyondMimic G1 29 DOF MJCF model path (ground removed for Genesis compatibility)
 # Path from genPiHub/envs/beyondmimic/env_cfg.py -> data/beyondmimic
 # env_cfg.py -> beyondmimic -> envs -> genPiHub -> genPiHub(project) -> data
-BEYONDMIMIC_ASSET_DIR = Path(__file__).resolve().parents[3] / "data" / "beyondmimic"
+BEYONDMIMIC_ASSET_DIR = Path(__file__).resolve().parents[4] / "data" / "beyondmimic"
 
 from . import observations as bm_obs
 from .actions import BeyondMimicActionsCfg

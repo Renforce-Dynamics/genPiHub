@@ -33,7 +33,7 @@ def create_beyondmimic_genesis_env_config(
         ...     viewer=True,
         ... )
     """
-    from genPiHub.envs.beyondmimic.env_cfg import BeyondMimicGenesisEnvCfg
+    from genPiHub.envs.beyondmimic.genesislab.env_cfg import BeyondMimicGenesisEnvCfg
 
     cfg = BeyondMimicGenesisEnvCfg()
     cfg.scene.num_envs = num_envs
