@@ -20,12 +20,19 @@ from .amo_env_builder import (
     build_amo_env_config,
     amo_env_config,
 )
+from .beyondmimic_env_builder import (
+    create_beyondmimic_genesis_env_config,
+)
+from .clot_env_builder import (
+    create_clot_genesis_env_config,
+)
 
 __all__ = [
     # Policy configs
     "PolicyConfig",
     "AMOPolicyConfig",
     "CLOTPolicyConfig",
+    "BeyondMimicPolicyConfig",
     "ProtoMotionsPolicyConfig",
     # Env configs
     "EnvConfig",
@@ -38,4 +45,8 @@ __all__ = [
     "create_amo_genesis_env_config_with_usd_scene",
     "build_amo_env_config",
     "amo_env_config",
+    # BeyondMimic env builders
+    "create_beyondmimic_genesis_env_config",
+    # CLOT env builders
+    "create_clot_genesis_env_config",
 ]

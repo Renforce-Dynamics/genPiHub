@@ -127,6 +127,8 @@ def main() -> int:
     policy_config = create_amo_policy_config(args)
     print(f"✅ Policy: {policy_config.obs_dof.num_dofs} DOFs")
 
+
+
     # Create environment with static Terrain USD
     print("\n[2/5] Creating environment with Terrain USD...")
     amo_env_cfg = create_amo_genesis_env_config_with_usd_scene(

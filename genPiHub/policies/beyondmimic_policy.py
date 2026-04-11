@@ -79,7 +79,7 @@ class BeyondMimicPolicy(Policy):
 
             # Get input/output names
             self.input_names = [i.name for i in self.session.get_inputs()]
-            self.output_names = [o.name for i in self.session.get_outputs()]
+            self.output_names = [o.name for o in self.session.get_outputs()]
 
             # Load config from model metadata if enabled
             if cfg.use_model_meta_config:
@@ -87,8 +87,9 @@ class BeyondMimicPolicy(Policy):
         else:
             logger.warning("No ONNX model loaded")
 
-        # Initialize base policy (this will set num_dofs, num_actions, etc.)
-        super().__init__(cfg, device)
+        # Initialize base policy attributes (CUSTOM - don't use super().__init__())
+        # BeyondMimic uses ONNX, not PyTorch JIT
+        self._init_from_base(cfg, device)
 
         # BeyondMimic-specific parameters
         self.action_scales = np.array(cfg.action_scales) if cfg.action_scales else np.ones(self.num_actions)
@@ -146,6 +147,7 @@ class BeyondMimicPolicy(Policy):
 
                 # Update DOF config
                 from genPiHub.tools import DOFConfig
+
                 dof_cfg = DOFConfig(
                     joint_names=joint_names,
                     num_dofs=len(joint_names),
@@ -163,6 +165,48 @@ class BeyondMimicPolicy(Policy):
 
         except Exception as e:
             logger.warning(f"Failed to load model metadata: {e}")
+
+    def _init_from_base(self, cfg, device):
+        """Initialize base policy attributes without loading PyTorch model.
+
+        BeyondMimic uses ONNX Runtime, not PyTorch JIT, so we manually
+        set the base attributes instead of calling super().__init__().
+        """
+        self.cfg = cfg
+        self.device = device
+
+        # Control parameters
+        self.freq = cfg.freq
+        self.dt = 1.0 / self.freq if self.freq > 0 else 0.02
+
+        # DOF configuration
+        self.cfg_obs_dof = cfg.obs_dof
+        self.cfg_action_dof = cfg.action_dof
+
+        self.num_dofs = cfg.obs_dof.num_dofs if cfg.obs_dof else cfg.action_dof.num_dofs
+        self.num_actions = cfg.action_dof.num_dofs
+
+        # Default positions
+        if cfg.obs_dof and cfg.obs_dof.default_pos is not None:
+            self.default_dof_pos = np.asarray(cfg.obs_dof.default_pos)
+        else:
+            self.default_dof_pos = np.zeros(self.num_dofs)
+
+        if cfg.action_dof and cfg.action_dof.default_pos is not None:
+            self.default_action_pos = np.asarray(cfg.action_dof.default_pos)
+        else:
+            self.default_action_pos = np.zeros(self.num_actions)
+
+        # Action processing parameters
+        self.action_scale = cfg.action_scale
+        self.action_clip = cfg.action_clip
+        self.action_beta = cfg.action_beta
+
+        # State tracking
+        self.last_action = np.zeros(self.num_actions)
+
+        # Model is ONNX session, not PyTorch
+        self.model = self.session
 
     def reset(self):
         """Reset BeyondMimic policy state."""

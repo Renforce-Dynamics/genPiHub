@@ -8,7 +8,7 @@ BeyondMimic observations depend on whether state estimator is used:
 import torch
 from typing import TYPE_CHECKING
 
-from genesislab.utils.torch_utils import quat_rotate_inverse
+from genPiHub.utils.math_utils import quat_rotate_inverse
 
 if TYPE_CHECKING:
     from genesislab.envs import ManagerBasedRlEnv
@@ -23,8 +23,8 @@ def base_lin_vel_b(env: "ManagerBasedRlEnv") -> torch.Tensor:
     Returns:
         Linear velocity (num_envs, 3)
     """
-    lin_vel_w = env.scene["robot"].root_lin_vel_w[:, :3]
-    base_quat = env.scene["robot"].root_quat_w
+    lin_vel_w = env.scene["robot"].data.root_lin_vel_w[:, :3]
+    base_quat = env.scene["robot"].data.root_quat_w
     return quat_rotate_inverse(base_quat, lin_vel_w)
 
 
@@ -37,8 +37,8 @@ def base_ang_vel_b(env: "ManagerBasedRlEnv") -> torch.Tensor:
     Returns:
         Angular velocity (num_envs, 3)
     """
-    ang_vel_w = env.scene["robot"].root_lin_vel_w[:, 3:6]
-    base_quat = env.scene["robot"].root_quat_w
+    ang_vel_w = env.scene["robot"].data.root_lin_vel_w[:, 3:6]
+    base_quat = env.scene["robot"].data.root_quat_w
     return quat_rotate_inverse(base_quat, ang_vel_w)
 
 

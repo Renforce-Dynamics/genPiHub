@@ -101,6 +101,7 @@ Thumbs.db
 # Claude specific
 .claude/memory/
 .claude/projects/
+.claude
 
 # Keep important config files (already tracked above)
 # !.vscode/settings.json

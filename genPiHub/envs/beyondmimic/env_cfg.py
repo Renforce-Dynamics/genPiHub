@@ -21,9 +21,86 @@ from genesis_tasks.locomotion.hvelocity.components import (
 from genesislab.envs.manager_based_rl_env import ManagerBasedRlEnvCfg
 from genesislab.managers import RewardTermCfg
 
+from pathlib import Path
+
+# BeyondMimic G1 29 DOF MJCF model path (ground removed for Genesis compatibility)
+# Path from genPiHub/envs/beyondmimic/env_cfg.py -> data/beyondmimic
+# env_cfg.py -> beyondmimic -> envs -> genPiHub -> genPiHub(project) -> data
+BEYONDMIMIC_ASSET_DIR = Path(__file__).resolve().parents[3] / "data" / "beyondmimic"
+
 from . import observations as bm_obs
-from .robot_cfg import G1_BEYONDMIMIC_CFG
 from .actions import BeyondMimicActionsCfg
+from .robot_cfg import (
+    G1_29DOF_BEYONDMIMIC_NAMES,
+    G1_BEYONDMIMIC_DEFAULT_POS,
+    G1_BEYONDMIMIC_STIFFNESS,
+    G1_BEYONDMIMIC_DAMPING,
+    G1_BEYONDMIMIC_EFFORT_LIMITS,
+    G1_BEYONDMIMIC_VELOCITY_LIMIT,
+    G1_BEYONDMIMIC_INITIAL_BASE_POS,
+    G1_BEYONDMIMIC_INITIAL_BASE_QUAT,
+)
+
+
+def create_g1_beyondmimic_robot_cfg():
+    """Create G1 robot configuration for BeyondMimic (29 DOF).
+
+    Uses MJCF model from RoboJuDo with BeyondMimic joint ordering and PD parameters.
+
+    Returns:
+        RobotCfg for 29 DOF G1 with BeyondMimic PD parameters
+    """
+    from genesislab.components.actuators.actuator_pd_cfg import ImplicitActuatorCfg
+    from genesislab.engine.assets.robot import InitialPoseCfg, RobotCfg
+
+    # Convert default positions to dict (for MJCF)
+    default_pos_dict = dict(zip(G1_29DOF_BEYONDMIMIC_NAMES, G1_BEYONDMIMIC_DEFAULT_POS))
+
+    # BeyondMimic G1 29 DOF configuration
+    # Uses MJCF from RoboJuDo (29 DOF with wrists)
+    return RobotCfg(
+        morph_type="MJCF",
+        morph_path=str(BEYONDMIMIC_ASSET_DIR / "g1_29dof_rev_1_0.xml"),
+        initial_pose=InitialPoseCfg(
+            pos=G1_BEYONDMIMIC_INITIAL_BASE_POS,
+            quat=G1_BEYONDMIMIC_INITIAL_BASE_QUAT,
+        ),
+        fixed_base=False,
+        control_dofs=None,
+        default_joint_pos=default_pos_dict,
+        actuators={
+            "beyondmimic": ImplicitActuatorCfg(
+                # CRITICAL: Genesis reorders joints when loading MJCF!
+                # We MUST explicitly specify the order to match BeyondMimicPolicy joint order
+                # Use exact joint names (not patterns) to force the BeyondMimic order
+                joint_names_expr=G1_29DOF_BEYONDMIMIC_NAMES,  # Explicitly ordered list (29 DOF)
+                effort_limit_sim={
+                    # Legs
+                    ".*_hip_.*_joint": 300.0,
+                    ".*_knee_joint": 300.0,
+                    ".*_ankle_.*_joint": 300.0,
+                    # Torso
+                    "waist_.*_joint": 300.0,
+                    # Arms
+                    ".*_shoulder_.*_joint": 100.0,
+                    ".*_elbow_joint": 100.0,
+                    # Wrists
+                    ".*_wrist_.*_joint": 50.0,
+                },
+                stiffness=G1_BEYONDMIMIC_STIFFNESS,
+                damping=G1_BEYONDMIMIC_DAMPING,
+                velocity_limit_sim={
+                    ".*_hip_.*_joint": 100.0,
+                    ".*_knee_joint": 100.0,
+                    ".*_ankle_.*_joint": 100.0,
+                    "waist_.*_joint": 100.0,
+                    ".*_shoulder_.*_joint": 100.0,
+                    ".*_elbow_joint": 100.0,
+                    ".*_wrist_.*_joint": 100.0,
+                },
+            ),
+        },
+    )
 
 
 @configclass
@@ -37,7 +114,11 @@ class BeyondMimicSceneCfg(SceneCfg):
     backend: str = "cuda"
     viewer: bool = True
     terrain: TerrainCfg = TerrainCfg(terrain_type="plane")
-    robots: dict = {"robot": G1_BEYONDMIMIC_CFG}
+
+    def __post_init__(self):
+        """Create robot config after initialization."""
+        self.robots = {"robot": create_g1_beyondmimic_robot_cfg()}
+
     sensors: dict = {
         "contact_forces": FakeContactSensorCfg(
             entity_name="robot",
