@@ -225,6 +225,21 @@ def main() -> int:
         episode_length_s=20.0,
     )
 
+    # from genesislab.components.terrains import TerrainCfg
+    # bm_env_cfg.scene.terrain = TerrainCfg(
+    #     terrain_type="mesh",
+    #     mesh_path="/home/ununtu/code/glab/genesislab/data/assets/test_plane.obj",
+    #     mesh_decompose_error_threshold=0.0,
+    #     env_spacing=0,
+    #     mesh_sdf_cell_size=0.02,
+    # )
+    # # Use USD as terrain (terrain system approach)
+    # bm_env_cfg.scene.terrain = TerrainCfg(
+    #     terrain_type="usd",
+    #     usd_path="/home/ununtu/code/glab/genesislab/data/assets/isaacsim_assets/Assets/Isaac/4.5/Isaac/Environments/Simple_Warehouse/warehouse.usd",
+    #     env_spacing=0,
+    # )
+
     # Create GenesisEnv wrapper
     genesis_cfg = GenesisEnvConfig(
         dof=policy_config.obs_dof,
