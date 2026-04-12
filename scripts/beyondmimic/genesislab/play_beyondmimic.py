@@ -225,7 +225,7 @@ def main() -> int:
         episode_length_s=20.0,
     )
 
-    # from genesislab.components.terrains import TerrainCfg
+    from genesislab.components.terrains import TerrainCfg
     # bm_env_cfg.scene.terrain = TerrainCfg(
     #     terrain_type="mesh",
     #     mesh_path="/home/ununtu/code/glab/genesislab/data/assets/test_plane.obj",
@@ -233,12 +233,37 @@ def main() -> int:
     #     env_spacing=0,
     #     mesh_sdf_cell_size=0.02,
     # )
-    # # Use USD as terrain (terrain system approach)
-    # bm_env_cfg.scene.terrain = TerrainCfg(
-    #     terrain_type="usd",
-    #     usd_path="/home/ununtu/code/glab/genesislab/data/assets/isaacsim_assets/Assets/Isaac/4.5/Isaac/Environments/Simple_Warehouse/warehouse.usd",
-    #     env_spacing=0,
-    # )
+    # Use USD as terrain (terrain system approach)
+    bm_env_cfg.scene.terrain = TerrainCfg(
+        terrain_type="usd",
+        usd_path="/home/ununtu/code/glab/genesislab/data/assets/isaacsim_assets/Assets/Isaac/4.5/Isaac/Environments/Simple_Warehouse/warehouse.usd",
+        env_spacing=0,
+    )
+
+    from genesislab.engine.scene import CameraCfg, RecordingCfg
+    bm_env_cfg.scene.camera = CameraCfg(
+        res=tuple([1920, 1080]),
+        pos=tuple([3.0, 0.0, 3.0]),
+        lookat=tuple([0.0, 0.0, 0.5]),
+        fov=45.0,
+        backend="rasterizer",  # Fast rendering for headless
+        show_in_gui=False,     # Don't show in viewer
+    )
+
+    # Recording configuration (only if --record-video is set)
+    bm_env_cfg.scene.recording = RecordingCfg(
+        enabled=True,
+        save_path="output/beyondmimic.avi",
+        fps=50,
+        codec="libx264",
+        codec_preset="veryfast",
+        codec_tune="zerolatency",
+        render_rgb=True,
+        render_depth=False,
+        render_segmentation=False,
+        render_normal=False,
+    )
+    print(f"\n🎥 Video recording enabled:")
 
     # Create GenesisEnv wrapper
     genesis_cfg = GenesisEnvConfig(

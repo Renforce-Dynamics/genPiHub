@@ -29,6 +29,7 @@ from genPiHub.environments import GenesisEnv
 
 # Import GenesisLab terrain config
 from genesislab.components.terrains import TerrainCfg
+from genesislab.engine.scene import CameraCfg, RecordingCfg
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,12 +75,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--interactive", action="store_true", help="Enable keyboard control")
     parser.add_argument("--print-every", type=int, default=100, help="Print stats every N steps")
 
+    # Camera and Recording
+    parser.add_argument("--record-video", action="store_true", help="Enable video recording")
+    parser.add_argument("--video-path", type=str, default="output/amo_mesh_terrain.mp4", help="Video output path")
+    parser.add_argument("--video-fps", type=int, default=60, help="Video frame rate")
+    parser.add_argument("--camera-res", type=int, nargs=2, default=[1920, 1080], help="Camera resolution (width height)")
+    parser.add_argument("--camera-pos", type=float, nargs=3, default=[5.0, 0.0, 3.0], help="Camera position (x y z)")
+    parser.add_argument("--camera-lookat", type=float, nargs=3, default=[0.0, 0.0, 0.5], help="Camera look-at target (x y z)")
+    parser.add_argument("--camera-fov", type=float, default=45.0, help="Camera field of view (degrees)")
+
     # Policy
     parser.add_argument("--model-dir", type=str, default="data/AMO", help="AMO model directory")
     parser.add_argument("--action-scale", type=float, default=0.25, help="Action scaling factor")
 
     # Commands
-    parser.add_argument("--vx", type=float, default=0.3, help="Forward velocity (m/s)")
+    parser.add_argument("--vx", type=float, default=0.5, help="Forward velocity (m/s)")
     parser.add_argument("--vy", type=float, default=0.0, help="Lateral velocity (m/s)")
     parser.add_argument("--yaw-rate", type=float, default=0.0, help="Yaw rate (rad/s)")
     parser.add_argument("--height", type=float, default=0.0, help="Height adjustment")
@@ -191,6 +201,40 @@ def create_amo_mesh_terrain_env_config(
     cfg.commands.base_velocity.ranges.lin_vel_x = (args.vx, args.vx)
     cfg.commands.base_velocity.ranges.lin_vel_y = (args.vy, args.vy)
     cfg.commands.base_velocity.ranges.ang_vel_z = (args.yaw_rate, args.yaw_rate)
+
+    # ============================================================
+    # NEW: Configure camera and recording for headless rendering
+    # ============================================================
+    # Camera configuration (can be None to disable camera)
+    cfg.scene.camera = CameraCfg(
+        res=tuple(args.camera_res),
+        pos=tuple(args.camera_pos),
+        lookat=tuple(args.camera_lookat),
+        fov=args.camera_fov,
+        backend="rasterizer",  # Fast rendering for headless
+        show_in_gui=False,     # Don't show in viewer
+    )
+
+    # Recording configuration (only if --record-video is set)
+    if args.record_video:
+        cfg.scene.recording = RecordingCfg(
+            enabled=True,
+            save_path=args.video_path,
+            fps=args.video_fps,
+            codec="libx264",
+            codec_preset="veryfast",
+            codec_tune="zerolatency",
+            render_rgb=True,
+            render_depth=False,
+            render_segmentation=False,
+            render_normal=False,
+        )
+        print(f"\n🎥 Video recording enabled:")
+        print(f"   Output: {args.video_path}")
+        print(f"   Resolution: {args.camera_res[0]}x{args.camera_res[1]}")
+        print(f"   FPS: {args.video_fps}")
+    else:
+        cfg.scene.recording = None
 
     return cfg
 
