@@ -121,5 +121,5 @@ G1_BEYONDMIMIC_VELOCITY_LIMIT = 100.0
 # Initial base position
 G1_BEYONDMIMIC_INITIAL_BASE_POS = [0.0, 0.0, 0.75]
 
-# Initial base orientation (quaternion: x, y, z, w)
-G1_BEYONDMIMIC_INITIAL_BASE_QUAT = [0.0, 0.0, 0.0, 1.0]
+# Initial base orientation (quaternion: w, x, y, z)
+G1_BEYONDMIMIC_INITIAL_BASE_QUAT = [1.0, 0.0, 0.0, 0.0]

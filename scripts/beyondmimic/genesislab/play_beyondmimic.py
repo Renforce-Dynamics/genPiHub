@@ -77,7 +77,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--headless", action="store_true", help="Disable viewer (explicit headless mode)")
 
     # Control
-    parser.add_argument("--max-steps", type=int, default=100000)
+    parser.add_argument("--max-steps", type=int, default=3000)
     parser.add_argument("--print-every", type=int, default=100)
 
     # Policy & Model
@@ -253,7 +253,7 @@ def main() -> int:
     # Recording configuration (only if --record-video is set)
     bm_env_cfg.scene.recording = RecordingCfg(
         enabled=True,
-        save_path="output/beyondmimic.avi",
+        save_path="output/beyondmimic.mp4",
         fps=50,
         codec="libx264",
         codec_preset="veryfast",
