@@ -18,11 +18,12 @@ genPiHub provides a standardized interface for loading and running different hum
 
 ```
 genPiHub/
-├── policies/               # Policy implementations
-│   ├── base_policy.py     # Base policy interface
-│   ├── amo_policy.py      # AMO policy (RSS 2025)
-│   ├── clot_policy.py     # CLOT policy (TODO)
-│   └── ...                # More policies
+├── policies/                      # Policy implementations
+│   ├── base_policy.py            # Base policy interface
+│   ├── amo_policy/               # AMO policy (RSS 2025)
+│   ├── clot_policy.py            # CLOT policy (AMP-based tracking)
+│   ├── beyondmimic_policy.py     # BeyondMimic (whole-body ONNX)
+│   └── holomotion_policy/        # HoloMotion v1.2 (Horizon Robotics)
 │
 ├── environments/          # Environment adapters
 │   ├── base_env.py        # Base environment interface
@@ -48,7 +49,7 @@ genPiHub/
 ### Installation
 
 ```bash
-cd /home/ununtu/code/hvla
+git clone git@github.com:Renforce-Dynamics/genPiHub.git
 pip install -e genPiHub
 ```
 
@@ -83,13 +84,16 @@ for step in range(1000):
 
 ## Supported Policies
 
-| Policy | Status | Description |
-|--------|--------|-------------|
-| **AMOPolicy** | ✅ Ready | Adaptive Motion Optimization (RSS 2025) |
-| **CLOTPolicy** | 🔧 Planned | Closed-Loop Global Motion Tracking |
-| **ProtoMotionsPolicy** | 🔧 Planned | Physics-based character animation |
-| **ASAPPolicy** | 🔧 Planned | ASAP locomotion/manipulation |
-| **BeyondMimicPolicy** | 🔧 Planned | Beyond Mimic policy |
+| Policy | Status | Description | Docs |
+|--------|--------|-------------|------|
+| **AMOPolicy** | ✅ Ready | Adaptive Motion Optimization (RSS 2025) | [AMO.md](docs/policies/AMO.md) |
+| **CLOTPolicy** | ✅ Ready | Closed-Loop Motion Tracking (AMP-based) | [CLOT.md](docs/policies/CLOT.md) |
+| **BeyondMimicPolicy** | ✅ Ready | Whole-body motion tracking (ONNX) | [BeyondMimic.md](docs/policies/BeyondMimic.md) |
+| **HoloMotionPolicy** | ✅ Ready¹ | HoloMotion v1.2 (Horizon Robotics) | [holomotion.md](docs/policies/holomotion.md) |
+| **ProtoMotionsPolicy** | 🔧 Planned | Physics-based character animation | — |
+| **ASAPPolicy** | 🔧 Planned | ASAP locomotion/manipulation | — |
+
+¹ `velocity_tracking` is fully wired; `motion_tracking` raises `NotImplementedError` (needs retargeted-motion loader — see [holomotion.md § 5](docs/policies/holomotion.md#5-motion-tracking--todo)).
 
 ## Supported Environments
 
@@ -183,15 +187,17 @@ genPiHub is designed for **research and rapid prototyping** while RoboJuDo targe
 
 ## Roadmap
 
-### Phase 1: Foundation (Current)
-- [x] Design base interfaces
-- [x] Implement AMOPolicy
-- [x] Implement GenesisEnv
-- [x] Registry system
-- [ ] Complete documentation
+### Phase 1: Foundation ✅
+- [x] Base Policy / Environment / Config interfaces
+- [x] Registry + factory loading
+- [x] GenesisEnv
 
-### Phase 2: More Policies
-- [ ] CLOTPolicy
+### Phase 2: Policies
+- [x] AMOPolicy
+- [x] CLOTPolicy
+- [x] BeyondMimicPolicy
+- [x] HoloMotionPolicy (velocity_tracking)
+- [ ] HoloMotionPolicy (motion_tracking — needs retargeted-motion loader)
 - [ ] ProtoMotionsPolicy
 - [ ] ASAPPolicy
 
@@ -208,20 +214,21 @@ genPiHub is designed for **research and rapid prototyping** while RoboJuDo targe
 
 ## Documentation
 
-- [Policy Interface](docs/policy_interface.md)
-- [Environment Interface](docs/environment_interface.md)
-- [Configuration Guide](docs/configuration.md)
-- [Adding Policies](docs/adding_policies.md)
-- [Adding Environments](docs/adding_environments.md)
+Per-policy documentation lives under [`docs/policies/`](docs/policies/):
+
+- [AMO](docs/policies/AMO.md) — Adaptive Motion Optimization (RSS 2025)
+- [CLOT](docs/policies/CLOT.md) — Closed-Loop Motion Tracking
+- [BeyondMimic](docs/policies/BeyondMimic.md) — Whole-body ONNX motion tracking
+- [HoloMotion](docs/policies/holomotion.md) — HoloMotion v1.2 (Horizon Robotics)
 
 ## Citation
 
 ```bibtex
 @software{genPiHub2026,
   title={genPiHub: A Unified Framework for Humanoid Robot Policies},
-  author={Your Name},
+  author={Renforce Dynamics},
   year={2026},
-  url={https://github.com/your-org/genPiHub}
+  url={https://github.com/Renforce-Dynamics/genPiHub}
 }
 ```
 
