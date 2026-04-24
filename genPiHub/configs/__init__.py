@@ -6,6 +6,7 @@ from .policy_configs import (
     CLOTPolicyConfig,
     BeyondMimicPolicyConfig,
     ProtoMotionsPolicyConfig,
+    HoloMotionPolicyConfig,
 )
 from .env_configs import (
     EnvConfig,
@@ -34,6 +35,7 @@ __all__ = [
     "CLOTPolicyConfig",
     "BeyondMimicPolicyConfig",
     "ProtoMotionsPolicyConfig",
+    "HoloMotionPolicyConfig",
     # Env configs
     "EnvConfig",
     "GenesisEnvConfig",

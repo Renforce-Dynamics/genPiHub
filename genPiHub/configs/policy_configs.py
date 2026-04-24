@@ -170,3 +170,73 @@ class ProtoMotionsPolicyConfig(PolicyConfig):
 
     name: str = "ProtoMotionsPolicy"
     # TODO: Add ProtoMotions-specific parameters
+
+
+@dataclass
+class HoloMotionPolicyConfig(PolicyConfig):
+    """Configuration for HorizonRobotics HoloMotion policy (ONNX).
+
+    Supports two task types exported by HoloMotion v1.2:
+      - ``velocity_tracking``: joystick-style command tracking (MLP, no KV cache)
+      - ``motion_tracking``:   reference-motion imitation (Transformer-MoE + KV cache)
+
+    The policy is distributed as a directory with ``config.yaml`` (training/env
+    config used for the checkpoint) and ``exported/*.onnx`` (the deployable
+    actor). The wrapper auto-reads DOF ordering, default angles and action
+    scales from the ONNX metadata_props embedded at export time.
+    """
+
+    name: str = "HoloMotionPolicy"
+
+    # Which model folder to load (preferred entry point). When set, overrides
+    # ``policy_file`` / ``config_file`` with the canonical layout:
+    #   <model_dir>/config.yaml
+    #   <model_dir>/exported/*.onnx
+    model_dir: Optional[Path | str] = None
+
+    # Or specify files explicitly:
+    config_file: Optional[Path | str] = None  # training config.yaml
+    # policy_file inherited from PolicyConfig — points to the .onnx file
+
+    # Task type — derived automatically from obs_groups config if omitted.
+    # One of: "velocity_tracking", "motion_tracking", "auto"
+    task_type: str = "auto"
+
+    # Runtime device for onnxruntime:  "cpu" | "cuda" | "tensorrt"
+    device: str = "cuda"
+
+    # Control frequency (HoloMotion v1.2 policy runs at 50 Hz)
+    freq: float = 50.0
+
+    # Obs term naming — HoloMotion exported configs use the unified obs_groups
+    # with the ``actor_`` prefix. Leave as-is unless you are using a fork.
+    obs_group_name: str = "unified"
+    actor_term_prefix: str = "actor_"
+
+    # --- Velocity tracking command plumbing ---
+    # The velocity command atomic obs is a 4-vector [is_moving, vx, vy, vyaw].
+    # Threshold for setting the ``is_moving`` flag (matches ROS2 deployment).
+    vel_cmd_is_moving_threshold: float = 0.1
+
+    # --- Motion tracking plumbing (only used when task_type=="motion_tracking") ---
+    # Path to a retargeted motion clip (.npz) to play during inference.
+    motion_npz_path: Optional[Path | str] = None
+    # Max transformer context length used at training/export time; the KV cache
+    # tensor shape is [n_layers, 2, 1, max_ctx_len, n_kv_heads, head_dim] and is
+    # read from the ONNX signature at load time.
+    motion_max_ctx_len: int = 32
+
+    # Action processing — HoloMotion uses per-joint action_scale embedded in
+    # ONNX metadata, so the scalar ``action_scale`` inherited from PolicyConfig
+    # stays at 1.0 and we apply the per-joint scale inside the wrapper.
+    action_scale: float = 1.0
+    action_clip: Optional[float] = 100.0  # matches env.config.normalization.clip_actions
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.model_dir is not None and not isinstance(self.model_dir, Path):
+            self.model_dir = Path(self.model_dir)
+        if self.config_file is not None and not isinstance(self.config_file, Path):
+            self.config_file = Path(self.config_file)
+        if self.motion_npz_path is not None and not isinstance(self.motion_npz_path, Path):
+            self.motion_npz_path = Path(self.motion_npz_path)
